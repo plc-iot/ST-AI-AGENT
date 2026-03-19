@@ -1,0 +1,258 @@
+{
+  "tp_function_block": {
+    "introduction": {
+      "name": "TP (Timer Pulse)",
+      "description": "IEC 61131-3 标准中的脉冲定时器功能块，用于生成固定宽度的脉冲信号。它是工业自动化控制中常用的定时器功能块之一，特别适用于需要精确控制脉冲宽度的场景。",
+      "basic_functions": [
+        "当输入信号 IN 为 TRUE 时，输出 Q 变为 TRUE 并保持 PT 时间，然后变为 FALSE",
+        "无论输入信号 IN 持续时间多长，输出脉冲宽度始终等于 PT 设定值",
+        "当输入信号 IN 变为 FALSE 且定时器已触发后，定时器复位",
+        "定时器会实时更新已用时间 ET，可用于监控计时过程"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "EN",
+        "type": "BOOL",
+        "direction": "输入",
+        "description": "使能信号，为 TRUE 时功能块正常工作"
+      },
+      {
+        "name": "ENO",
+        "type": "BOOL",
+        "direction": "输出",
+        "description": "使能输出，当 EN 为 TRUE 且功能块正常工作时为 TRUE"
+      },
+      {
+        "name": "IN",
+        "type": "BOOL",
+        "direction": "输入",
+        "description": "触发信号，为 TRUE 时开始生成脉冲"
+      },
+      {
+        "name": "PT",
+        "type": "TIME",
+        "direction": "输入",
+        "description": "脉冲时间，设定的脉冲宽度"
+      },
+      {
+        "name": "Q",
+        "type": "BOOL",
+        "direction": "输出",
+        "description": "输出信号，脉冲期间为 TRUE"
+      },
+      {
+        "name": "ET",
+        "type": "TIME",
+        "direction": "输出",
+        "description": "已用时间，实时显示当前计时值"
+      }
+    ],
+    "working_principle": [
+      "初始状态：IN 为 FALSE，Q 为 FALSE，ET 为 T#0ms",
+      "开始脉冲：当 IN 从 FALSE 变为 TRUE 时，Q 立即变为 TRUE，开始计时，ET 逐渐增加",
+      "脉冲结束：当 ET >= PT 时，Q 变为 FALSE，ET 保持为 PT",
+      "保持状态：IN 保持 TRUE，Q 保持 FALSE，ET 保持为 PT",
+      "复位：当 IN 变为 FALSE 时，ET 复位为 T#0ms，等待下一次触发"
+    ],
+    "timing_tables": {
+      "scenario_1": {
+        "description": "输入脉冲宽度大于等于输出脉冲宽度（PT = T#500ms）",
+        "table": [
+          {"time_point": "t0", "in_state": "FALSE", "q_state": "FALSE", "et_value": "T#0ms", "description": "初始状态"},
+          {"time_point": "t1", "in_state": "TRUE", "q_state": "TRUE", "et_value": "T#0ms", "description": "IN 变为 TRUE，Q 立即变为 TRUE"},
+          {"time_point": "t2", "in_state": "TRUE", "q_state": "TRUE", "et_value": "T#200ms", "description": "计时中，ET 逐渐增加"},
+          {"time_point": "t3", "in_state": "TRUE", "q_state": "TRUE", "et_value": "T#499ms", "description": "接近脉冲结束"},
+          {"time_point": "t4", "in_state": "TRUE", "q_state": "FALSE", "et_value": "T#500ms", "description": "ET >= PT，Q 变为 FALSE"},
+          {"time_point": "t5", "in_state": "TRUE", "q_state": "FALSE", "et_value": "T#500ms", "description": "IN 保持 TRUE，Q 保持 FALSE"},
+          {"time_point": "t6", "in_state": "FALSE", "q_state": "FALSE", "et_value": "T#0ms", "description": "IN 变为 FALSE，ET 复位"}
+        ]
+      },
+      "scenario_2": {
+        "description": "输入脉冲宽度小于输出脉冲宽度（PT = T#500ms，输入脉冲宽度 = T#200ms）",
+        "table": [
+          {"time_point": "t0", "in_state": "FALSE", "q_state": "FALSE", "et_value": "T#0ms", "description": "初始状态"},
+          {"time_point": "t1", "in_state": "TRUE", "q_state": "TRUE", "et_value": "T#0ms", "description": "IN 变为 TRUE，Q 立即变为 TRUE"},
+          {"time_point": "t2", "in_state": "TRUE", "q_state": "TRUE", "et_value": "T#199ms", "description": "计时中，ET 逐渐增加"},
+          {"time_point": "t3", "in_state": "FALSE", "q_state": "TRUE", "et_value": "T#200ms", "description": "IN 变为 FALSE，但 Q 保持 TRUE"},
+          {"time_point": "t4", "in_state": "FALSE", "q_state": "TRUE", "et_value": "T#499ms", "description": "继续计时，Q 保持 TRUE"},
+          {"time_point": "t5", "in_state": "FALSE", "q_state": "FALSE", "et_value": "T#500ms", "description": "ET >= PT，Q 变为 FALSE"},
+          {"time_point": "t6", "in_state": "FALSE", "q_state": "FALSE", "et_value": "T#0ms", "description": "定时器复位"}
+        ]
+      }
+    },
+    "usage_examples": [
+      {
+        "id": "example_1",
+        "title": "基本脉冲生成",
+        "description": "当 TriggerSignal 为 TRUE 时，OutputPulse 会输出一个宽度为 1 秒的脉冲，无论 TriggerSignal 持续时间多长。",
+        "code": "// 使用 TP 生成固定宽度的脉冲\nVAR\n    TriggerSignal: BOOL;\n    PulseTimer: TP;\n    OutputPulse: BOOL;\nEND_VAR\n\nPulseTimer(IN:=TriggerSignal, PT:=T#1s);\nOutputPulse := PulseTimer.Q;",
+        "variables": [
+          {"name": "TriggerSignal", "type": "BOOL", "description": "触发信号"},
+          {"name": "PulseTimer", "type": "TP", "description": "脉冲定时器功能块"},
+          {"name": "OutputPulse", "type": "BOOL", "description": "输出脉冲信号"}
+        ],
+        "parameters": [
+          {"name": "IN", "value": "TriggerSignal", "description": "触发信号输入"},
+          {"name": "PT", "value": "T#1s", "description": "1秒脉冲宽度"}
+        ],
+        "outputs": [
+          {"name": "Q", "description": "脉冲期间为TRUE，输出固定宽度脉冲"}
+        ]
+      },
+      {
+        "id": "example_2",
+        "title": "脉冲宽度控制",
+        "description": "通过调整 PulseWidth 变量，可以灵活控制输出脉冲的宽度，适用于需要不同脉冲宽度的场景。",
+        "code": "// 使用 TP 控制脉冲宽度\nVAR\n    StartPulse: BOOL;\n    PulseTimer: TP;\n    ValveControl: BOOL;\n    PulseWidth: TIME := T#200ms;\nEND_VAR\n\nPulseTimer(IN:=StartPulse, PT:=PulseWidth);\nValveControl := PulseTimer.Q;",
+        "variables": [
+          {"name": "StartPulse", "type": "BOOL", "description": "开始脉冲信号"},
+          {"name": "PulseTimer", "type": "TP", "description": "脉冲定时器功能块"},
+          {"name": "ValveControl", "type": "BOOL", "description": "阀门控制信号"},
+          {"name": "PulseWidth", "type": "TIME", "description": "脉冲宽度，默认200ms"}
+        ],
+        "parameters": [
+          {"name": "IN", "value": "StartPulse", "description": "开始脉冲信号输入"},
+          {"name": "PT", "value": "PulseWidth", "description": "脉冲宽度，可通过变量调整"}
+        ],
+        "outputs": [
+          {"name": "Q", "description": "脉冲期间为TRUE，用于控制阀门"}
+        ]
+      },
+      {
+        "id": "example_3",
+        "title": "脉冲序列控制",
+        "description": "通过多个 TP 功能块的级联，可以实现复杂的脉冲序列控制，适用于需要多步骤操作的场景。",
+        "code": "// 使用 TP 控制脉冲序列\nVAR\n    StartSequence: BOOL;\n    Timer1: TP;\n    Timer2: TP;\n    Timer3: TP;\n    Step1: BOOL;\n    Step2: BOOL;\n    Step3: BOOL;\nEND_VAR\n\n// 第一步：1秒脉冲\nTimer1(IN:=StartSequence, PT:=T#1s);\nStep1 := Timer1.Q;\n\n// 第二步：2秒脉冲（在第一步结束后开始）\nTimer2(IN:=NOT Timer1.Q AND StartSequence, PT:=T#2s);\nStep2 := Timer2.Q;\n\n// 第三步：1.5秒脉冲（在第二步结束后开始）\nTimer3(IN:=(NOT Timer1.Q) AND (NOT Timer2.Q) AND StartSequence, PT:=T#1s500ms);\nStep3 := Timer3.Q;",
+        "variables": [
+          {"name": "StartSequence", "type": "BOOL", "description": "开始序列信号"},
+          {"name": "Timer1", "type": "TP", "description": "第一步脉冲定时器"},
+          {"name": "Timer2", "type": "TP", "description": "第二步脉冲定时器"},
+          {"name": "Timer3", "type": "TP", "description": "第三步脉冲定时器"},
+          {"name": "Step1", "type": "BOOL", "description": "第一步脉冲输出"},
+          {"name": "Step2", "type": "BOOL", "description": "第二步脉冲输出"},
+          {"name": "Step3", "type": "BOOL", "description": "第三步脉冲输出"}
+        ],
+        "parameters": [
+          {"name": "Timer1.IN", "value": "StartSequence", "description": "开始序列信号输入"},
+          {"name": "Timer1.PT", "value": "T#1s", "description": "第一步脉冲宽度1秒"},
+          {"name": "Timer2.IN", "value": "NOT Timer1.Q AND StartSequence", "description": "第一步结束后开始"},
+          {"name": "Timer2.PT", "value": "T#2s", "description": "第二步脉冲宽度2秒"},
+          {"name": "Timer3.IN", "value": "(NOT Timer1.Q) AND (NOT Timer2.Q) AND StartSequence", "description": "第二步结束后开始"},
+          {"name": "Timer3.PT", "value": "T#1s500ms", "description": "第三步脉冲宽度1.5秒"}
+        ],
+        "outputs": [
+          {"name": "Timer1.Q", "description": "第一步脉冲输出"},
+          {"name": "Timer2.Q", "description": "第二步脉冲输出"},
+          {"name": "Timer3.Q", "description": "第三步脉冲输出"}
+        ]
+      }
+    ],
+    "notes": {
+      "time_format": "TIME 类型的参数格式为 `T#d hh:mm:ss.ms`，例如：T#1s（1秒）、T#500ms（500毫秒）、T#1m30s（1分30秒）、T#0h0m10s（10秒）",
+      "initialization": "每个功能块都有对应的初始化函数（如 `TP_init__`），在使用功能块前应调用初始化函数，初始化函数会将功能块的内部状态变量重置为初始值",
+      "enable_signal": "EN 参数用于功能块的级联控制，当 EN 为 FALSE 时，功能块不工作；ENO 参数用于指示功能块是否正常工作，可用于级联到下一个功能块",
+      "precision": "定时器的精度取决于 PLC 的扫描周期，对于高精度定时，应选择扫描周期较小的任务，避免在扫描周期较长的任务中使用高精度定时器",
+      "memory_usage": "每个 TP 功能块实例会占用一定的内存空间，在资源受限的系统中，应合理使用定时器，避免过多实例",
+      "input_signal": "TP 功能块对输入信号的上升沿敏感，当 IN 从 FALSE 变为 TRUE 时触发；如果输入信号 IN 在脉冲期间保持 TRUE，当脉冲结束后，Q 会变为 FALSE，即使 IN 仍然为 TRUE；如果在脉冲期间 IN 变为 FALSE，当 IN 再次变为 TRUE 时，会重新触发一个新的脉冲"
+    },
+    "common_issues": [
+      {
+        "issue": "定时器不触发",
+        "description": "输入信号 IN 为 TRUE，但定时器不触发",
+        "solutions": [
+          "检查 EN 参数是否为 TRUE",
+          "检查 PT 参数是否设置正确",
+          "检查功能块是否正确初始化",
+          "检查输入信号是否有上升沿（从 FALSE 变为 TRUE）"
+        ]
+      },
+      {
+        "issue": "脉冲宽度不准确",
+        "description": "实际脉冲宽度与设定值偏差较大",
+        "solutions": [
+          "减小 PLC 的扫描周期",
+          "使用更高精度的定时器功能块",
+          "考虑使用硬件定时器"
+        ]
+      },
+      {
+        "issue": "定时器冲突",
+        "description": "多个定时器同时使用时出现冲突",
+        "solutions": [
+          "为每个定时器分配独立的变量",
+          "避免在同一扫描周期内多次触发同一定时器",
+          "合理安排定时器的执行顺序"
+        ]
+      },
+      {
+        "issue": "脉冲重叠",
+        "description": "多次触发导致脉冲重叠",
+        "solutions": [
+          "在触发新脉冲前，确保前一个脉冲已结束",
+          "使用状态机控制脉冲的触发逻辑",
+          "为每个脉冲分配独立的定时器实例"
+        ]
+      }
+    ],
+    "comparison": [
+      {
+        "timer_type": "TP",
+        "function": "脉冲定时器",
+        "application": "生成固定宽度的脉冲",
+        "scenarios": "适用于需要固定宽度脉冲的场景，如电磁阀控制、步进电机脉冲信号、报警信号等"
+      },
+      {
+        "timer_type": "TON",
+        "function": "通电延时定时器",
+        "application": "延时启动、故障检测",
+        "scenarios": "适用于需要延时启动的场景，如电机启动前的预热、故障检测的延时确认等"
+      },
+      {
+        "timer_type": "TOF",
+        "function": "断电延时定时器",
+        "application": "延时停止、保持输出",
+        "scenarios": "适用于需要延时停止的场景，如设备停机后的冷却、系统断电后的应急处理等"
+      }
+    ],
+    "best_practices": [
+      {
+        "category": "命名规范",
+        "practices": [
+          "使用有意义的变量名，如 `PulseTimer`、`ValveControlTimer`",
+          "为定时器参数添加注释，说明脉冲宽度的含义"
+        ]
+      },
+      {
+        "category": "模块化设计",
+        "practices": [
+          "将定时器逻辑封装到功能块中，提高代码复用性",
+          "使用结构化编程，将定时器相关逻辑组织到专门的程序块中"
+        ]
+      },
+      {
+        "category": "错误处理",
+        "practices": [
+          "添加定时器故障检测逻辑，如定时器超时检测",
+          "为关键定时器添加监控和报警机制"
+        ]
+      },
+      {
+        "category": "性能优化",
+        "practices": [
+          "对于长时间脉冲，考虑使用计数器替代定时器，减少 CPU 负担",
+          "合理设置定时器的扫描周期，平衡精度和性能"
+        ]
+      },
+      {
+        "category": "调试技巧",
+        "practices": [
+          "使用 ET 输出监控定时器的当前状态",
+          "在调试过程中，可临时缩短 PT 值，加快测试速度",
+          "使用可视化工具监控定时器的状态变化"
+        ]
+      }
+    ],
+    "summary": "TP 功能块是工业自动化控制中常用的脉冲生成工具，通过合理使用 TP 功能块，可以实现各种脉冲控制逻辑，如固定宽度脉冲生成、信号防抖、周期性脉冲等。在使用 TP 功能块时，应注意正确设置参数、合理初始化、注意精度、避免冲突和优化设计。通过掌握 TP 功能块的使用方法和最佳实践，可以更高效地实现各种脉冲控制逻辑，提高控制系统的可靠性和稳定性。"
+  }
+}
